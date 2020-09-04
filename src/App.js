@@ -184,7 +184,7 @@ const App = () => {
           : <RecordItem key={rec.id} id={rec.id} text={rec.text} isComplete={rec.isComplete} />
         )
       }
-      {!isEditing && records?.length === 0 && <p>Записей нет</p>}
+      {!isEditing && records?.length === 0 && <p className="no-records">Записей нет</p>}
       {!isEditing && records?.length > 0 &&
         records.map(rec => <RecordItem key={rec.id} id={rec.id} text={rec.text} isComplete={rec.isComplete} />)
       }
