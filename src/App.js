@@ -73,14 +73,16 @@ const AddNewRecordForm = ({ onAddNewRecord }) => {
   )
 }
 
-const RecordInput = ({ id, text, inputRef, onRecordInputChange, onRecordInputSave, onRecordInputCancel }) => {
+const RecordInput = ({ id, text, inputRef, onRecordInputSave, onRecordInputCancel }) => {
+  const [tempText, setTempText] = useState(text)
+
   const handleRecordInputChange = useCallback(e => {
-    onRecordInputChange(e.target.value, id)
-  }, [id, onRecordInputChange])
+    setTempText(e.target.value)
+  }, [])
 
   const handleRecordInputSave = useCallback(() => {
-    onRecordInputSave(id);
-  }, [id, onRecordInputSave])
+    onRecordInputSave(id, tempText);
+  }, [id, onRecordInputSave, tempText])
 
   return (
     <div className="record-item">
@@ -88,7 +90,7 @@ const RecordInput = ({ id, text, inputRef, onRecordInputChange, onRecordInputSav
         className="record-item__input"
         ref={inputRef}
         name={`RecordInput_${id}`}
-        value={text}
+        value={tempText}
         onChange={handleRecordInputChange}
       />
       <div className="record-item__action-block">
@@ -166,26 +168,12 @@ const App = () => {
     setEditedRecords(editedRecords);
   }, [records]);
 
-  const onRecordInputChange = useCallback((text, id) => {
+  const onRecordInputSave = useCallback((id, newText) => {
     const newRecords = editedRecords.map(rec => {
       if (rec.id === id) {
         return {
           ...rec,
-          text
-        }
-      } else {
-        return rec;
-      }
-    });
-
-    setEditedRecords(newRecords);
-  }, [editedRecords])
-
-  const onRecordInputSave = useCallback(id => {
-    const newRecords = editedRecords.map(rec => {
-      if (rec.id === id) {
-        return {
-          ...rec,
+          text: newText,
           isEditing: false
         }
       } else {
@@ -222,7 +210,7 @@ const App = () => {
     <div className="container">
       {isEditing && editedRecords?.length > 0 &&
         editedRecords.map(rec => rec.isEditing
-          ? <RecordInput key={rec.id} id={rec.id} text={rec.text} onRecordInputChange={onRecordInputChange} onRecordInputSave={onRecordInputSave} onRecordInputCancel={onRecordInputCancel} />
+          ? <RecordInput key={rec.id} id={rec.id} text={rec.text} onRecordInputSave={onRecordInputSave} onRecordInputCancel={onRecordInputCancel} />
           : <RecordItem key={rec.id} id={rec.id} text={rec.text} isComplete={rec.isComplete} onDeleteClick={onDeleteClick} onEditClick={onEditClick} onCompleteClick={onCompleteClick} />
         )
       }
