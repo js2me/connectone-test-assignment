@@ -14,6 +14,8 @@ const RecordItem = ({ id, text, isComplete, onDeleteClick, onEditClick, onComple
   const handleEditClick = useCallback(() => onEditClick(id, isComplete), [id, isComplete, onEditClick])
   const handleCompleteClick = useCallback(() => onCompleteClick(id), [id, onCompleteClick])
 
+  console.count(`record item ${id}`)
+
   return (
     <div className="record-item">
       <p className={`record-item__text ${isComplete ? "record-item__text--complete" : ""}`}>{text}</p>
@@ -83,6 +85,9 @@ const RecordInput = ({ id, text, inputRef, onRecordInputSave, onRecordInputCance
   const handleRecordInputSave = useCallback(() => {
     onRecordInputSave(id, tempText);
   }, [id, onRecordInputSave, tempText])
+  
+
+  console.count(`record input ${id}`)
 
   return (
     <div className="record-item">
@@ -210,7 +215,7 @@ const App = () => {
     <div className="container">
       {isEditing && editedRecords?.length > 0 &&
         editedRecords.map(rec => rec.isEditing
-          ? <RecordInput key={rec.id} id={rec.id} text={rec.text} onRecordInputSave={onRecordInputSave} onRecordInputCancel={onRecordInputCancel} />
+          ? <RecordInput key={rec.id} id={rec.id} inputRef={inputRef} text={rec.text} onRecordInputSave={onRecordInputSave} onRecordInputCancel={onRecordInputCancel} />
           : <RecordItem key={rec.id} id={rec.id} text={rec.text} isComplete={rec.isComplete} onDeleteClick={onDeleteClick} onEditClick={onEditClick} onCompleteClick={onCompleteClick} />
         )
       }
