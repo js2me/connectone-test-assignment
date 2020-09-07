@@ -1,35 +1,134 @@
 import React, {
   useState,
   useRef,
-  useEffect
+  useEffect,
+  useCallback
 } from "react";
 import { v4 as uuidv4 } from "uuid";
 import "./App.scss";
 
-const App = () => {
-  const [records, setRecords] = useState(JSON.parse(localStorage.getItem("records") || "[]"));
-  const [editedRecords, setEditedRecords] = useState([]);
+
+
+const RecordItem = ({ id, text, isComplete, onDeleteClick, onEditClick, onCompleteClick }) => {
+  const handleDeleteClick = useCallback(() => onDeleteClick(id, isComplete), [id, isComplete, onDeleteClick])
+  const handleEditClick = useCallback(() => onEditClick(id, isComplete), [id, isComplete, onEditClick])
+  const handleCompleteClick = useCallback(() => onCompleteClick(id), [id, onCompleteClick])
+
+  return (
+    <div className="record-item">
+      <p className={`record-item__text ${isComplete ? "record-item__text--complete" : ""}`}>{text}</p>
+      <div className="record-item__action-block">
+        <span
+          className={`record-item__action record-item__action--danger ${isComplete ? "record-item__action--complete" : ""}`}
+          onClick={handleDeleteClick}
+        >
+          [у]
+        </span>
+        <span
+          className={`record-item__action ${isComplete ? "record-item__action--complete" : ""}`}
+          onClick={handleEditClick}
+        >
+          [и]
+        </span>
+        <span
+          className="record-item__action record-item__action--no-margin-right"
+          onClick={handleCompleteClick}
+        >
+          [з]
+        </span>
+      </div>
+    </div>
+  )
+};
+
+const AddNewRecordForm = ({ onAddNewRecord }) => {
   const [inputText, setInputText] = useState("");
+
+  const handleChangeInputText = useCallback((e) => {
+    setInputText(e.target.value)
+  }, [])
+
+  const handleFormSubmit = useCallback(e => {
+    e.preventDefault();
+
+    setInputText("")
+    onAddNewRecord(inputText)
+  }, [inputText, onAddNewRecord])
+
+  return (
+    <form className="form" onSubmit={handleFormSubmit}>
+      <input
+        className="form__input"
+        value={inputText}
+        name="inputText"
+        onChange={handleChangeInputText}
+        placeholder="событие"
+      />
+      <input
+        className="form__submit"
+        type="submit"
+        value="Добавить"
+      />
+    </form>
+  )
+}
+
+const RecordInput = ({ id, text, inputRef, onRecordInputChange, onRecordInputSave, onRecordInputCancel }) => {
+  const handleRecordInputChange = useCallback(e => {
+    onRecordInputChange(e.target.value, id)
+  }, [id, onRecordInputChange])
+
+  const handleRecordInputSave = useCallback(() => {
+    onRecordInputSave(id);
+  }, [id, onRecordInputSave])
+
+  return (
+    <div className="record-item">
+      <input
+        className="record-item__input"
+        ref={inputRef}
+        name={`RecordInput_${id}`}
+        value={text}
+        onChange={handleRecordInputChange}
+      />
+      <div className="record-item__action-block">
+        <span
+          className="record-item__action record-item__action--success"
+          onClick={handleRecordInputSave}
+        >
+          [п]
+        </span>
+        <span
+          className="record-item__action record-item__action--danger record-item__action--no-margin-right"
+          onClick={onRecordInputCancel}
+        >
+          [о]
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  const [records, setRecords] = useState(localStorage.getItem("records") ? JSON.parse(localStorage.getItem("records")) : []);
+  const [editedRecords, setEditedRecords] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const inputRef = useRef(null);
+
+  console.count("APP render");
 
   useEffect(() => {
     inputRef.current && inputRef.current.focus();
   }, [editedRecords]);
 
-  const onInputChange = evt => {
-    setInputText(evt.target.value);
-  };
+  const handleAddNewRecord = useCallback((recordText) => {
 
-  const onFormSubmit = evt => {
-    evt.preventDefault();
-
-    if (inputText !== "") {
+    if (recordText !== "") {
       const newRecords = [
         ...records,
         {
           id: uuidv4(),
-          text: inputText,
+          text: recordText,
           isEditing: false,
           isComplete: false
         }
@@ -37,19 +136,18 @@ const App = () => {
 
       localStorage.setItem("records", JSON.stringify(newRecords));
       setRecords(newRecords);
-      setInputText("");
     }
-  };
+  }, [records]);
 
-  const onDeleteClick = (id, isComplete) => {
+  const onDeleteClick = useCallback((id, isComplete) => {
     if (isComplete) return;
 
     const newRecords = records.filter(rec => rec.id !== id);
     localStorage.setItem("records", JSON.stringify(newRecords));
     setRecords(newRecords);
-  };
+  }, [records]);
 
-  const onEditClick = (id, isComplete) => {
+  const onEditClick = useCallback((id, isComplete) => {
     if (isComplete) return;
 
     setIsEditing(true);
@@ -66,9 +164,9 @@ const App = () => {
     });
 
     setEditedRecords(editedRecords);
-  };
+  }, [records]);
 
-  const onRecordInputChange = (text, id) => {
+  const onRecordInputChange = useCallback((text, id) => {
     const newRecords = editedRecords.map(rec => {
       if (rec.id === id) {
         return {
@@ -81,9 +179,9 @@ const App = () => {
     });
 
     setEditedRecords(newRecords);
-  };
+  }, [editedRecords])
 
-  const onRecordInputSave = id => {
+  const onRecordInputSave = useCallback(id => {
     const newRecords = editedRecords.map(rec => {
       if (rec.id === id) {
         return {
@@ -98,13 +196,13 @@ const App = () => {
     localStorage.setItem("records", JSON.stringify(newRecords));
     setRecords(newRecords);
     setIsEditing(false);
-  };
+  }, [editedRecords]);
 
-  const onRecordInputCancel = () => {
+  const onRecordInputCancel = useCallback(() => {
     setIsEditing(false);
-  };
+  }, [])
 
-  const onCompleteClick = id => {
+  const onCompleteClick = useCallback(id => {
     const newRecords = records.map(rec => {
       if (rec.id === id) {
         return {
@@ -118,92 +216,21 @@ const App = () => {
 
     localStorage.setItem("records", JSON.stringify(newRecords));
     setRecords(newRecords);
-  };
-
-  const RecordItem = ({ id, text, isComplete }) => {
-    return (
-      <div className="record-item">
-        <p className={`record-item__text ${isComplete ? "record-item__text--complete" : ""}`}>{text}</p>
-        <div className="record-item__action-block">
-          <span
-            className={`record-item__action record-item__action--danger ${isComplete ? "record-item__action--complete" : ""}`}
-            onClick={() => onDeleteClick(id, isComplete)}
-          >
-            [у]
-          </span>
-          <span
-            className={`record-item__action ${isComplete ? "record-item__action--complete" : ""}`}
-            onClick={() => onEditClick(id, isComplete)}
-          >
-            [и]
-          </span>
-          <span
-            className="record-item__action record-item__action--no-margin-right"
-            onClick={() => onCompleteClick(id)}
-          >
-            [з]
-          </span>
-        </div>
-      </div>
-    )
-  };
-
-  const RecordInput = ({ id, text }) => {
-    return (
-      <div className="record-item">
-        <input
-          className="record-item__input"
-          ref={inputRef}
-          name={`RecordInput_${id}`}
-          value={text}
-          onChange={evt => onRecordInputChange(evt.target.value, id)}
-        />
-        <div className="record-item__action-block">
-          <span
-            className="record-item__action record-item__action--success"
-            onClick={() => onRecordInputSave(id)}
-          >
-            [п]
-          </span>
-          <span
-            className="record-item__action record-item__action--danger record-item__action--no-margin-right"
-            onClick={() => onRecordInputCancel()}
-          >
-            [о]
-          </span>
-        </div>
-      </div>
-    );
-  };
+  }, [records]);
 
   return (
     <div className="container">
       {isEditing && editedRecords?.length > 0 &&
         editedRecords.map(rec => rec.isEditing
-          ? <RecordInput key={rec.id} id={rec.id} text={rec.text} />
-          : <RecordItem key={rec.id} id={rec.id} text={rec.text} isComplete={rec.isComplete} />
+          ? <RecordInput key={rec.id} id={rec.id} text={rec.text} onRecordInputChange={onRecordInputChange} onRecordInputSave={onRecordInputSave} onRecordInputCancel={onRecordInputCancel} />
+          : <RecordItem key={rec.id} id={rec.id} text={rec.text} isComplete={rec.isComplete} onDeleteClick={onDeleteClick} onEditClick={onEditClick} onCompleteClick={onCompleteClick} />
         )
       }
       {!isEditing && records?.length === 0 && <p className="no-records">Записей нет</p>}
       {!isEditing && records?.length > 0 &&
-        records.map(rec => <RecordItem key={rec.id} id={rec.id} text={rec.text} isComplete={rec.isComplete} />)
+        records.map(rec => <RecordItem key={rec.id} id={rec.id} text={rec.text} isComplete={rec.isComplete} onDeleteClick={onDeleteClick} onEditClick={onEditClick} onCompleteClick={onCompleteClick} />)
       }
-      {!isEditing &&
-        <form className="form" onSubmit={onFormSubmit}>
-          <input
-            className="form__input"
-            value={inputText}
-            name="inputText"
-            onChange={onInputChange}
-            placeholder="событие"
-          />
-          <input
-            className="form__submit"
-            type="submit"
-            value="Добавить"
-          />
-        </form>
-      }
+      {!isEditing && <AddNewRecordForm onAddNewRecord={handleAddNewRecord} />}
     </div>
   );
 };
